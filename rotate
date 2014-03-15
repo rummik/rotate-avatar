@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+
+var Twit = require('twit');
+var fs = require('fs');
+var Base64 = require('base64');
+
+var twit = new Twit(require('./config.json'));
+
+var avatars = fs.readdirSync('avatars').filter(function(a) { return a[0] != '.'; });
+var avatar = avatars[Math.floor(Math.random() * avatars.length)];
+var image = Base64.encode(fs.readFileSync('avatars/' + avatar));
+
+twit.post('account/update_profile_image', { image: image }, function() {
+	console.log(avatar);
+});
+
+// vim: set ft=javascript :
