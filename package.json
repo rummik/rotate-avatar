@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "dependencies": {
+    "base64": "~2.1.0",
+    "twit": "~1.1.12"
+  }
+}
