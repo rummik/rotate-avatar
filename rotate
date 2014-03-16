@@ -4,11 +4,43 @@ var Twit = require('twit');
 var fs = require('fs');
 var Base64 = require('base64');
 
-var twit = new Twit(require(__dirname + '/config.json'));
+var config = require(__dirname + '/config.json');
+
+var twit = new Twit(config.twitter);
+var gravatar = require('set-gravatar')(config.gravatar.email, config.gravatar.password);
 
 var avatars = fs.readdirSync(__dirname + '/avatars').filter(function(a) { return a[0] != '.'; });
 var avatar = avatars[Math.floor(Math.random() * avatars.length)];
 var image = Base64.encode(fs.readFileSync(__dirname + '/avatars/' + avatar));
+
+gravatar.deleteUserImage = function(userimage, cb) {
+	gravatar.methodCall('grav.deleteUserimage', [{
+		password: config.gravatar.password,
+		userimage: userimage
+	}], cb);
+};
+
+gravatar.saveData = function(data, rating, cb) {
+	gravatar.methodCall('grav.saveData', [{
+		password: config.gravatar.password,
+		data: data,
+		rating: rating
+	}], cb);
+};
+
+gravatar.addresses(function(error, data) {
+	var address = data[config.gravatar.email];
+	var uploadImage = function() {
+		gravatar.saveData(image, 0, function(error, data) {
+			gravatar.useUserimage(data, [config.gravatar.email], function() {});
+		});
+	};
+
+	if (address && address.userimage)
+		return gravatar.deleteUserImage(address.userimage, uploadImage);
+
+	uploadImage();
+});
 
 twit.post('account/update_profile_image', { image: image }, function() {
 	console.log(avatar);
