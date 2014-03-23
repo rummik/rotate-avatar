@@ -30,16 +30,13 @@ gravatar.saveData = function(data, rating, cb) {
 
 gravatar.addresses(function(error, data) {
 	var address = data[config.gravatar.email];
-	var uploadImage = function() {
-		gravatar.saveData(image, 0, function(error, data) {
-			gravatar.useUserimage(data, [config.gravatar.email], function() {});
-		});
-	};
 
-	if (address && address.userimage)
-		return gravatar.deleteUserImage(address.userimage, uploadImage);
+	gravatar.saveData(image, 0, function(error, data) {
+		gravatar.useUserimage(data, [config.gravatar.email], function() {});
 
-	uploadImage();
+		if (address && address.userimage)
+			return gravatar.deleteUserImage(address.userimage, function() {});
+	});
 });
 
 twit.post('account/update_profile_image', { image: image }, function() {
