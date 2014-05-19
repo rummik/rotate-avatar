@@ -9,5 +9,10 @@
 	"gravatar": {
 		"email": "",
 		"password": ""
+	},
+
+	"github": {
+		"login": "",
+		"password": ""
 	}
 }
