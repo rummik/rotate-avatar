@@ -3,6 +3,7 @@
 var Twit = require('twit');
 var fs = require('fs');
 var Base64 = require('base64');
+var request = require('request');
 
 var config = require(__dirname + '/config.json');
 
@@ -11,7 +12,8 @@ var gravatar = require('set-gravatar')(config.gravatar.email, config.gravatar.pa
 
 var avatars = fs.readdirSync(__dirname + '/avatars').filter(function(a) { return a[0] != '.'; });
 var avatar = avatars[Math.floor(Math.random() * avatars.length)];
-var image = Base64.encode(fs.readFileSync(__dirname + '/avatars/' + avatar));
+var rawimage = fs.readFileSync(__dirname + '/avatars/' + avatar);
+var image = Base64.encode(rawimage);
 
 gravatar.deleteUserImage = function(userimage, cb) {
 	gravatar.methodCall('grav.deleteUserimage', [{
@@ -41,6 +43,62 @@ gravatar.addresses(function(error, data) {
 
 twit.post('account/update_profile_image', { image: image }, function() {
 	console.log(avatar);
+});
+
+var gh = request.defaults({ jar: true });
+gh.get('https://github.com/login', function(err, res) {
+	var token = res.body.match(/<meta content="([^"]+)" name="csrf-token" \/>/)[1];
+
+	var form = { authenticity_token: token, login: config.github.login, password: config.github.password };
+	gh.post('https://github.com/session', { form: form }, function(err, res) {
+		if (!res.headers.location)
+			return console.error('GitHub: Incorrect username or password.');
+
+		gh.get('https://github.com/settings/profile', function(err, res) {
+			var token = res.body.match(/<meta content="([^"]+)" name="csrf-token" \/>/)[1];
+
+			var headers = {
+				'X-CSRF-Token': token,
+			};
+
+			var asset = {
+				size: rawimage.length,
+				name: avatar,
+				content_type: 'image/' + avatar.match(/\.([a-z]+)/i)[1].toLowerCase().replace('jpg', 'jpeg'),
+			};
+
+			gh.post('https://github.com/upload/policies/avatars', { json: true, headers: headers, form: asset }, function(err, res) {
+				var multipart = [
+					{ 'Content-Disposition': 'form-data; name="size"', body: asset.size.toString() },
+					{ 'Content-Disposition': 'form-data; name="content_type"', body: asset.content_type },
+					{ 'Content-Disposition': 'form-data; name="file"; filename="' + avatar + '"', 'Content-Type': asset.content_type, body: rawimage },
+				];
+
+				var req = request.post(res.body.upload_url, { headers: res.body.header, multipart: multipart }, function(err, res) {
+					var data = JSON.parse(res.body);
+
+					var headers = {
+						'X-Requested-With': 'XMLHttpRequest',
+						'Referer': 'https://github.com/settings/profile',
+					};
+
+					var form = {
+						authenticity_token: token,
+						cropped_x: 0,
+						cropped_y: 0,
+						cropped_width: 0,
+						cropped_height: 0,
+					};
+
+					gh.post('https://github.com/settings/avatars/' + data.id, { form: form }, function(err, res) {
+						console.log('GitHub: Uploaded');
+					});
+				});
+
+				req.headers['content-type'] = req.headers['content-type'].replace('related', 'form-data');
+			});
+		});
+	});
 });
 
 // vim: set ft=javascript :
