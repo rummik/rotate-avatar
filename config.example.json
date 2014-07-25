@@ -8,7 +8,10 @@
 
 	"gravatar": {
 		"email": "",
-		"password": ""
+		"password": "",
+
+		"//": "List of addresses to update in Gravatar",
+		"addresses": []
 	},
 
 	"github": {

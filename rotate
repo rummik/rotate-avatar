@@ -31,13 +31,15 @@ gravatar.saveData = function(data, rating, cb) {
 };
 
 gravatar.addresses(function(error, data) {
-	var address = data[config.gravatar.email];
-
 	gravatar.saveData(image, 0, function(error, data) {
-		gravatar.useUserimage(data, [config.gravatar.email], function() {});
+		(config.gravatar.addresses || [config.gravatar.email]).forEach(function(email) {
+			var address = data[email];
 
-		if (address && address.userimage)
-			return gravatar.deleteUserImage(address.userimage, function() {});
+			gravatar.useUserimage(data, [email], function() {});
+
+			if (address && address.userimage)
+				return gravatar.deleteUserImage(address.userimage, function() {});
+		});
 	});
 });
 
