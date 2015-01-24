@@ -15,6 +15,8 @@ var avatar = avatars[Math.floor(Math.random() * avatars.length)];
 var rawimage = fs.readFileSync(__dirname + '/avatars/' + avatar);
 var image = Base64.encode(rawimage);
 
+console.log(avatar);
+
 gravatar.deleteUserImage = function(userimage, cb) {
 	gravatar.methodCall('grav.deleteUserimage', [{
 		password: config.gravatar.password,
@@ -30,21 +32,30 @@ gravatar.saveData = function(data, rating, cb) {
 	}], cb);
 };
 
-gravatar.addresses(function(error, data) {
+gravatar.addresses(function(error, addresses) {
 	gravatar.saveData(image, 0, function(error, data) {
+		if (error) {
+			console.error('Gravatar:', error);
+			return;
+		}
+
 		(config.gravatar.addresses || [config.gravatar.email]).forEach(function(email) {
-			var address = data[email];
+			var address = addresses[email];
 
-			gravatar.useUserimage(data, [email], function() {});
+			gravatar.useUserimage(data, [email], function() {
+				console.log('Gravatar: Uploaded');
 
-			if (address && address.userimage)
-				return gravatar.deleteUserImage(address.userimage, function() {});
+				if (address && address.userimage) {
+					gravatar.deleteUserImage(address.userimage, function() {});
+				}
+			});
+
 		});
 	});
 });
 
 twit.post('account/update_profile_image', { image: image }, function() {
-	console.log(avatar);
+	console.log('Twitter: Uploaded');
 });
 
 var gh = request.defaults({ jar: true });
