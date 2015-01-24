@@ -2,7 +2,6 @@
 
 var Twit = require('twit');
 var fs = require('fs');
-var Base64 = require('base64');
 var request = require('request');
 
 var config = require(__dirname + '/config.json');
@@ -13,7 +12,7 @@ var gravatar = require('set-gravatar')(config.gravatar.email, config.gravatar.pa
 var avatars = fs.readdirSync(__dirname + '/avatars').filter(function(a) { return a[0] != '.'; });
 var avatar = avatars[Math.floor(Math.random() * avatars.length)];
 var rawimage = fs.readFileSync(__dirname + '/avatars/' + avatar);
-var image = Base64.encode(rawimage);
+var image = new Buffer(rawimage).toString('base64');
 
 console.log(avatar);
 
